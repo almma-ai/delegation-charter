@@ -1,0 +1,16 @@
+cff-version: 1.2.0
+message: "If you use or adapt this specification, please cite it as below."
+title: "Delegation Charter Specification"
+version: "0.1"
+date-released: "2026-09-30"
+license: CC-BY-4.0
+type: dataset
+authors:
+  - family-names: Wall
+    given-names: Lucas E.
+    affiliation: Almma.AI
+keywords:
+  - AI agents
+  - delegation
+  - governance
+  - accountability
