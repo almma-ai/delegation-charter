@@ -19,6 +19,10 @@ Every agent gets a charter with eight pillars:
 
 Platforms conform at three levels: **Declared** (the terms are captured and shown), **Enforced** (the terms are enforced at the tool boundary, outside the model) and **Verified** (every run is recorded against the charter version it ran under).
 
+## Related
+
+- [agent-governance-check](https://github.com/almma-ai/agent-governance-check): a tool for auditing agents on a LibreChat deployment against the charter's required fields.
+
 ## Feedback
 
 Open an [issue](../../issues) to propose a change, or a [discussion](../../discussions) for questions and implementation reports.
