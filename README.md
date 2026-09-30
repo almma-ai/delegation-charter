@@ -2,7 +2,7 @@
 
 An open specification for the terms an organization writes down before an AI agent acts on its behalf: what the agent will never do, when it stops, and who answers for it.
 
-**Read the specification: [SPEC.md](SPEC.md)** (v0.1, draft for comment)
+**Read the specification: [SPEC.md](SPEC.md)** (v0.1.1, draft for comment)
 
 ## In one minute
 
@@ -11,7 +11,7 @@ Every agent gets a charter with eight pillars:
 1. **Owner:** the one person who answers for the agent.
 2. **Escalation recipient:** who receives work the agent must not finish.
 3. **Approval authority:** who approves the charter, its changes and its sharing.
-4. **Scope:** what the agent will do, and a never-do list that cannot be empty.
+4. **Scope:** what the agent will do, and a never-do list that cannot be empty, each item tagged Enforced or Instructed.
 5. **Systems and permissions:** each tool marked read, write or irreversible; anything unlisted is excluded.
 6. **Inputs and outputs:** without required inputs, the agent stops rather than guesses.
 7. **Escalation rules:** deterministic actions for out-of-scope requests, never-do matches, missing inputs and irreversible actions.

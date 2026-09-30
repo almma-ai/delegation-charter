@@ -1,4 +1,4 @@
-# Delegation Charter Specification v0.1
+# Delegation Charter Specification v0.1.1
 
 ## Status and purpose
 
@@ -6,7 +6,7 @@ A Delegation Charter is the minimum set of terms an organization writes down bef
 
 | Item | Value |
 | --- | --- |
-| Version | 0.1, draft for comment |
+| Version | 0.1.1, draft for comment |
 | Date | 2026-09-30 |
 | Editor | Lucas E. Wall, Almma.AI |
 | License | CC BY 4.0: anyone may implement, adapt or redistribute it, crediting "Delegation Charter Specification, Lucas E. Wall, Almma.AI" |
@@ -34,7 +34,7 @@ A delegation can pass work onward. When an agent hands work to a sub-agent or an
 
 ## The charter
 
-A charter has a header and eight pillars. A charter with any MUST field empty is incomplete, and an incomplete charter cannot be approved.
+A charter has a header and eight pillars. A charter with any MUST field empty is incomplete, and an incomplete charter cannot be activated. Pillars 6 and 8 MAY be met by platform defaults, provided irreversible actions always require a person's approval.
 
 ### Header
 
@@ -53,10 +53,10 @@ A charter has a header and eight pillars. A charter with any MUST field empty is
 | --- | --- | --- | --- |
 | 1 | Owner | The one person who answers for the delegation. | MUST resolve to a platform identity, not free text. MUST be a person, not a group. If the owner leaves, the delegation MUST move to Suspended until someone else takes it. |
 | 2 | Escalation recipient | The person or role who receives work the agent must not finish. | MUST be named. MAY be the owner. SHOULD have a backup. |
-| 3 | Approval authority | Who approves the charter, changes to it, and sharing it with others. | MUST be named. SHOULD be someone other than the owner when the agent writes to outside systems or serves people beyond its owner. |
-| 4 | Scope | What the agent will do, and what it will never do. | The never-do list MUST NOT be empty. Each item SHOULD be specific enough to test. Never-do items override any instruction, including the owner's. |
+| 3 | Approval authority | Who approves the charter, changes to it, and sharing it with others. | MUST be named when the agent is shared or uses write or irreversible tools; otherwise the charter MAY be self-declared (see Lifecycle). SHOULD be someone other than the owner when the agent writes to outside systems or serves people beyond its owner. |
+| 4 | Scope | What the agent will do, and what it will never do. | The never-do list MUST NOT be empty. Each item SHOULD be specific enough to test. Never-do items override any instruction, including the owner's. Each item MUST be tagged Enforced (tied to a tool, data source or action the platform can block or hold) or Instructed (guidance to the model only). |
 | 5 | Systems and permissions | The tools, data sources and connectors the agent may use, each marked read, write or irreversible. | MUST be listed. Anything not listed is excluded. |
-| 6 | Inputs and outputs | Required inputs, optional inputs, what the agent produces and who receives it. | Required inputs MUST be listed; without them the agent MUST stop, not guess. |
+| 6 | Inputs and outputs | Required inputs, optional inputs, what the agent produces and who receives it. | Required inputs, if any, MUST be listed; without them the agent MUST stop, not guess. |
 | 7 | Escalation rules | Trigger, action and recipient for each case where the agent must stop or hand off. | MUST cover the four minimum triggers below. Actions MUST be deterministic; "use judgment" is not an action. |
 | 8 | Execution constraints | Limits on how the agent runs: reversibility, rate, spend, timing and retention. | Irreversible actions MUST require approval by a person. Rate and spend limits SHOULD be set. |
 
@@ -77,7 +77,7 @@ Consider an agent that sells used items for a person on a marketplace. Its never
 
 ## Lifecycle
 
-A charter moves through five states. Only an Active charter lets the agent run.
+A charter moves through five states. An Active charter lets the agent run for everyone it is shared with. A Draft lets it run only for its owner, for testing.
 
 ```mermaid
 stateDiagram-v2
@@ -86,6 +86,7 @@ stateDiagram-v2
     Draft --> PendingApproval: owner submits
     PendingApproval --> Draft: returned for changes
     PendingApproval --> Active: approval authority signs
+    Draft --> Active: owner self-declares (unshared, no write tools)
     Active --> Draft: any change creates a new version
     Active --> Suspended: owner leaves
     Suspended --> Active: new owner confirmed
@@ -97,13 +98,15 @@ stateDiagram-v2
 
 Any change to an Active charter, including a new tool or a shorter never-do list, creates a new version in Draft that must be approved again. A charter is retired, never deleted, so its execution records stay readable.
 
+An Active charter is labeled either Approved or Self-declared. It is Approved when the approval authority signed it. It MAY be Self-declared when the agent is not shared and uses no write or irreversible tools: the owner activates it without approval. Either label means the terms were written down and reviewed, not that every item is enforced; that is what the Enforced and Instructed tags say. If a self-declared agent is later shared or given a write tool, its charter MUST return to Draft and be approved.
+
 ## Platform conformance
 
 A platform conforms at one of three levels. Each level includes everything in the level before it.
 
 | Level | Name | The platform MUST |
 | --- | --- | --- |
-| 1 | Declared | Capture every MUST field. Refuse to approve an incomplete charter. Keep every charter version. Show anyone who uses the agent three things: what it will never do, when it stops, and who gets called. |
+| 1 | Declared | Capture every MUST field. Refuse to approve an incomplete charter. Keep every charter version. Show anyone who uses the agent what it will never do (with each item's Enforced or Instructed tag), when it stops, who gets called, and whether the charter is Approved or Self-declared. |
 | 2 | Enforced | Deny by default any tool or data source not listed in pillar 5, at the tool boundary, outside the model. Enforce every never-do item that maps to a tool, data source or action the same way. Route each escalation trigger to the named recipient. Hold irreversible actions until a person approves. Require the approval authority to approve sharing. Return an approved charter to Draft when it changes. |
 | 3 | Verified | Link every execution record to the charter version it ran under. Flag drift: tools or data used that the charter does not list. Prompt the owner at each review date. Let someone other than the owner and the platform vendor read the records. |
 
@@ -131,7 +134,7 @@ A charter SHOULD be stored as JSON so platforms can exchange and enforce it. The
 
 ```json
 {
-  "spec": "delegation-charter/0.1",
+  "spec": "delegation-charter/0.1.1",
   "id": "chr_estimate_intake",
   "version": 3,
   "name": "Estimate intake",
@@ -140,12 +143,17 @@ A charter SHOULD be stored as JSON so platforms can exchange and enforce it. The
   "success_measure": "Share of calls with a complete estimate request, reviewed monthly.",
   "review_date": "2026-12-31",
   "state": "active",
+  "activation": { "type": "approved", "by": "user:franchise-owner", "date": "2026-09-12" },
   "owner": { "identity": "user:ops-manager" },
   "escalation_recipient": { "identity": "user:ops-manager", "backup": "role:dispatch" },
   "approval_authority": { "identity": "user:franchise-owner" },
   "scope": {
     "will_do": ["Collect move date, origin, destination and inventory", "Quote from the rate card only"],
-    "never_do": ["Quote a price not on the rate card", "Confirm a booking", "Take payment details"]
+    "never_do": [
+      { "item": "Quote a price not on the rate card", "enforcement": "instructed" },
+      { "item": "Confirm a booking", "enforcement": "enforced", "tool": "crm_create_lead", "condition": "status = booked" },
+      { "item": "Take payment details", "enforcement": "instructed" }
+    ]
   },
   "systems": [
     { "tool": "rate_card_lookup", "access": "read" },
@@ -185,7 +193,7 @@ Where a platform cannot enforce a pillar, a conforming report MUST say so rather
 
 A charter does not make a model reliable. It bounds what the agent may touch, makes departures from its terms detectable, and attributes every delegation to a person who answers for it. Reliability is a property of the whole system: the model, the platform, the charter and the people named in it.
 
-This is version 0.1. Minor versions add optional fields; major versions may change required ones. Comments, proposed changes and implementation reports are welcome as issues or discussions in this repository.
+This is version 0.1.1. Minor versions add optional fields; major versions may change required ones. Version 0.1.1 adds the Enforced and Instructed tags, Self-declared activation, owner testing of drafts, and defaults for pillars 6 and 8. Comments, proposed changes and implementation reports are welcome as issues or discussions in this repository.
 
 ## References
 
