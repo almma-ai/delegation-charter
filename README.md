@@ -21,7 +21,8 @@ Platforms conform at three levels: **Declared** (the terms are captured and show
 
 ## Related
 
-- [agent-governance-check](https://github.com/almma-ai/agent-governance-check): a tool for auditing agents on a LibreChat deployment against the charter's required fields.
+- [librechat-charter-diagnostic](https://github.com/almma-ai/librechat-charter-diagnostic): test a LibreChat deployment against this specification. Every agent against the eight pillars, the deployment against conformance Levels 1–3, with a draft charter per agent.
+- [agent-governance-check](https://github.com/almma-ai/agent-governance-check): an anonymous, counts-only audit for comparing deployments (codebook v1.0, frozen so results stay comparable).
 
 ## Feedback
 
