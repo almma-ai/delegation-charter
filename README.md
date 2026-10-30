@@ -2,7 +2,7 @@
 
 An open specification for the terms an organization writes down before an AI agent acts on its behalf: what the agent will never do, when it stops, and who answers for it.
 
-**Read the specification: [SPEC.md](SPEC.md)** (v0.1.1, draft for comment)
+**Read the specification: [SPEC.md](SPEC.md)** (v0.1.2, draft for comment)
 
 ## In one minute
 

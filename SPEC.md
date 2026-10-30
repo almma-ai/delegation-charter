@@ -1,4 +1,4 @@
-# Delegation Charter Specification v0.1.1
+# Delegation Charter Specification v0.1.2
 
 ## Status and purpose
 
@@ -6,8 +6,8 @@ A Delegation Charter is the minimum set of terms an organization writes down bef
 
 | Item | Value |
 | --- | --- |
-| Version | 0.1.1, draft for comment |
-| Date | 2026-09-30 |
+| Version | 0.1.2, draft for comment |
+| Date | 2026-10-29 |
 | Editor | Lucas E. Wall, Almma.AI |
 | License | CC BY 4.0: anyone may implement, adapt or redistribute it, crediting "Delegation Charter Specification, Lucas E. Wall, Almma.AI" |
 | Feedback | Open an issue or a discussion in this repository |
@@ -55,9 +55,9 @@ A charter has a header and eight pillars. A charter with any MUST field empty is
 | 2 | Escalation recipient | The person or role who receives work the agent must not finish. | MUST be named. MAY be the owner. SHOULD have a backup. |
 | 3 | Approval authority | Who approves the charter, changes to it, and sharing it with others. | MUST be named when the agent is shared or uses write or irreversible tools; otherwise the charter MAY be self-declared (see Lifecycle). SHOULD be someone other than the owner when the agent writes to outside systems or serves people beyond its owner. |
 | 4 | Scope | What the agent will do, and what it will never do. | The never-do list MUST NOT be empty. Each item SHOULD be specific enough to test. Never-do items override any instruction, including the owner's. Each item MUST be tagged Enforced (tied to a tool, data source or action the platform can block or hold) or Instructed (guidance to the model only). |
-| 5 | Systems and permissions | The tools, data sources and connectors the agent may use, each marked read, write or irreversible. | MUST be listed. Anything not listed is excluded. |
+| 5 | Systems and permissions | The tools, data sources and connectors the agent may use, each marked read, write or irreversible. | MUST be listed. Anything not listed is excluded. Write means the tool changes something but is not irreversible; it does not mean the change can be undone. Each write tool SHOULD name a reversal owner, the person who undoes a wrong write, and a reversal window, how long after the write it can still be undone. |
 | 6 | Inputs and outputs | Required inputs, optional inputs, what the agent produces and who receives it. | Required inputs, if any, MUST be listed; without them the agent MUST stop, not guess. |
-| 7 | Escalation rules | Trigger, action and recipient for each case where the agent must stop or hand off. | MUST cover the four minimum triggers below. Actions MUST be deterministic; "use judgment" is not an action. |
+| 7 | Escalation rules | Trigger, action and recipient for each case where the agent must stop or hand off. | MUST cover the four minimum triggers below, and SHOULD cover the fifth. Actions MUST be deterministic; "use judgment" is not an action. |
 | 8 | Execution constraints | Limits on how the agent runs: reversibility, rate, spend, timing and retention. | Irreversible actions MUST require approval by a person. Rate and spend limits SHOULD be set. |
 
 ### Minimum escalation triggers
@@ -70,6 +70,12 @@ Every charter MUST say what happens in these four cases:
 4. The agent is about to take an irreversible action.
 
 Allowed actions are: stop and hand off to the recipient; pause and ask the requester; produce a draft only; notify the recipient and continue. The first two are the default for triggers 2 and 4.
+
+The four minimum triggers all fire before an action. A charter SHOULD also say what happens after one:
+
+5. A completed action is found to be wrong.
+
+Anyone can raise trigger 5: the owner, a user, a reviewer or an automated check. Its action is fixed: notify the escalation recipient and, for a write tool, its reversal owner, with the execution record of the run attached. If the reversal window has passed, or the tool is irreversible, the escalation recipient decides how to repair the harm.
 
 ### Example
 
@@ -108,7 +114,7 @@ A platform conforms at one of three levels. Each level includes everything in th
 | --- | --- | --- |
 | 1 | Declared | Capture every MUST field. Refuse to approve an incomplete charter. Keep every charter version. Show anyone who uses the agent what it will never do (with each item's Enforced or Instructed tag), when it stops, who gets called, and whether the charter is Approved or Self-declared. |
 | 2 | Enforced | Deny by default any tool or data source not listed in pillar 5, at the tool boundary, outside the model. Enforce every never-do item that maps to a tool, data source or action the same way. Route each escalation trigger to the named recipient. Hold irreversible actions until a person approves. Require the approval authority to approve sharing. Return an approved charter to Draft when it changes. |
-| 3 | Verified | Link every execution record to the charter version it ran under. Flag drift: tools or data used that the charter does not list. Prompt the owner at each review date. Let someone other than the owner and the platform vendor read the records. |
+| 3 | Verified | Link every execution record to the charter version it ran under. Flag drift: tools or data used that the charter does not list. Prompt the owner at each review date. When a charter covers trigger 5, route each report to the named people with the execution record of that run. Let someone other than the owner and the platform vendor read the records. |
 
 Some never-do items cannot be tied to a tool, such as "never give legal advice." A platform places those in the agent's instructions and SHOULD check outputs against them, but no platform can guarantee a model follows them. Level 2 requires enforcement outside the model wherever an item can be tied to a tool, data source or action.
 
@@ -126,6 +132,8 @@ Every execution MUST leave a record with at least these fields, kept for as long
 | Approvals | Who approved each held action, and when. |
 | Outcome | Completed, stopped, handed off or failed. |
 
+A record SHOULD also note any later trigger 5 report about the run: who raised it, when, and whether the action was reversed.
+
 The record describes what the agent did. It does not need to contain the conversation itself; where content is stored, access to it SHOULD require a logged, stated purpose.
 
 ## Machine-readable form
@@ -134,7 +142,7 @@ A charter SHOULD be stored as JSON so platforms can exchange and enforce it. The
 
 ```json
 {
-  "spec": "delegation-charter/0.1.1",
+  "spec": "delegation-charter/0.1.2",
   "id": "chr_estimate_intake",
   "version": 3,
   "name": "Estimate intake",
@@ -157,7 +165,7 @@ A charter SHOULD be stored as JSON so platforms can exchange and enforce it. The
   },
   "systems": [
     { "tool": "rate_card_lookup", "access": "read" },
-    { "tool": "crm_create_lead", "access": "write" }
+    { "tool": "crm_create_lead", "access": "write", "reversal": { "owner": "user:ops-manager", "window_hours": 72 } }
   ],
   "inputs": { "required": ["caller_phone", "move_date"], "optional": ["inventory_photos"] },
   "outputs": [{ "item": "draft_estimate", "recipient": "user:ops-manager" }],
@@ -165,7 +173,8 @@ A charter SHOULD be stored as JSON so platforms can exchange and enforce it. The
     { "trigger": "out_of_scope", "action": "hand_off", "to": "escalation_recipient" },
     { "trigger": "never_do_match", "action": "hand_off", "to": "escalation_recipient" },
     { "trigger": "missing_required_input", "action": "ask_requester" },
-    { "trigger": "irreversible_action", "action": "hold_for_approval", "to": "approval_authority" }
+    { "trigger": "irreversible_action", "action": "hold_for_approval", "to": "approval_authority" },
+    { "trigger": "action_found_wrong", "action": "notify_with_record", "to": ["escalation_recipient", "reversal_owner"] }
   ],
   "constraints": {
     "irreversible_actions": "require_approval",
@@ -193,7 +202,7 @@ Where a platform cannot enforce a pillar, a conforming report MUST say so rather
 
 A charter does not make a model reliable. It bounds what the agent may touch, makes departures from its terms detectable, and attributes every delegation to a person who answers for it. Reliability is a property of the whole system: the model, the platform, the charter and the people named in it.
 
-This is version 0.1.1. Minor versions add optional fields; major versions may change required ones. Version 0.1.1 adds the Enforced and Instructed tags, Self-declared activation, owner testing of drafts, and defaults for pillars 6 and 8. Comments, proposed changes and implementation reports are welcome as issues or discussions in this repository.
+This is version 0.1.2. Minor versions add optional fields; major versions may change required ones. Version 0.1.2 defines write as not irreversible, adds an optional reversal owner and window for each write tool, and adds trigger 5 for an action found wrong after it ran, prompted by feedback from @renezander030 in [LibreChat discussion #16575](https://github.com/LibreChat-AI/LibreChat/discussions/16575). Version 0.1.1 added the Enforced and Instructed tags, Self-declared activation, owner testing of drafts, and defaults for pillars 6 and 8. Comments, proposed changes and implementation reports are welcome as issues or discussions in this repository.
 
 ## References
 
