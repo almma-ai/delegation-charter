@@ -1,0 +1,33 @@
+name: schema
+on:
+  push:
+    paths: ["schema/**", "examples/**", "SPEC.md"]
+  pull_request:
+    paths: ["schema/**", "examples/**", "SPEC.md"]
+permissions:
+  contents: read
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - run: pip install "jsonschema[format]>=4.21"
+      - name: schema is valid and every example passes it
+        run: |
+          python - <<'EOF'
+          import glob, json, sys
+          from jsonschema import Draft202012Validator, FormatChecker
+          sch = json.load(open("schema/charter-0.1.2.schema.json"))
+          Draft202012Validator.check_schema(sch)
+          v = Draft202012Validator(sch, format_checker=FormatChecker())
+          bad = 0
+          for f in sorted(glob.glob("examples/*.charter.json")):
+              errs = list(v.iter_errors(json.load(open(f))))
+              for e in errs:
+                  print(f"{f}: {list(e.absolute_path)}: {e.message}")
+              bad += len(errs)
+              print(f"{f}: {'ok' if not errs else 'INVALID'}")
+          sys.exit(1 if bad else 0)
+          EOF

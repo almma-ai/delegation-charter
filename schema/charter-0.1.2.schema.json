@@ -1,0 +1,197 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/almma-ai/delegation-charter/main/schema/charter-0.1.2.schema.json",
+  "title": "Delegation Charter v0.1.2",
+  "description": "Machine-readable form of a Delegation Charter (SPEC.md, 'Machine-readable form'). A draft may leave MUST fields null; any other state must fill them, because an incomplete charter cannot be activated.",
+  "type": "object",
+  "required": ["spec", "id", "version", "name", "state", "owner", "escalation_recipient", "scope", "systems", "escalation_rules"],
+  "properties": {
+    "spec": { "const": "delegation-charter/0.1.2" },
+    "id": { "type": "string", "pattern": "^chr_[A-Za-z0-9_.-]+$" },
+    "version": { "type": "integer", "minimum": 0 },
+    "name": { "type": "string", "minLength": 1 },
+    "description": { "type": ["string", "null"] },
+    "purpose": { "type": ["string", "null"] },
+    "success_measure": { "type": ["string", "null"] },
+    "review_date": { "type": ["string", "null"], "format": "date" },
+    "state": { "enum": ["draft", "pending_approval", "active", "suspended", "retired"] },
+    "activation": {
+      "type": ["object", "null"],
+      "required": ["type"],
+      "properties": {
+        "type": { "enum": ["approved", "self_declared"] },
+        "by": { "$ref": "#/$defs/identityOrNull" },
+        "date": { "type": ["string", "null"], "format": "date" }
+      }
+    },
+    "owner": {
+      "type": "object",
+      "required": ["identity"],
+      "properties": {
+        "identity": { "$ref": "#/$defs/identityOrNull" },
+        "name": { "type": "string" },
+        "role": { "type": "string" }
+      }
+    },
+    "escalation_recipient": {
+      "type": "object",
+      "required": ["identity"],
+      "properties": {
+        "identity": { "$ref": "#/$defs/identityOrNull" },
+        "backup": { "$ref": "#/$defs/identityOrNull" }
+      }
+    },
+    "approval_authority": {
+      "type": ["object", "null"],
+      "properties": {
+        "identity": { "$ref": "#/$defs/identityOrNull" }
+      }
+    },
+    "scope": {
+      "type": "object",
+      "required": ["never_do"],
+      "properties": {
+        "will_do": { "type": "array", "items": { "type": "string", "minLength": 1 } },
+        "never_do": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["item", "enforcement"],
+            "properties": {
+              "item": { "type": "string", "minLength": 1 },
+              "enforcement": { "enum": ["enforced", "instructed"] },
+              "tool": { "type": "string" },
+              "condition": { "type": "string" }
+            },
+            "if": { "properties": { "enforcement": { "const": "enforced" } } },
+            "then": { "required": ["tool"] }
+          }
+        }
+      }
+    },
+    "systems": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["tool", "access"],
+        "properties": {
+          "tool": { "type": "string", "minLength": 1 },
+          "access": { "enum": ["read", "write", "irreversible"] },
+          "reversal": {
+            "type": "object",
+            "properties": {
+              "owner": { "$ref": "#/$defs/identity" },
+              "window_hours": { "type": "number", "minimum": 0 }
+            }
+          }
+        }
+      }
+    },
+    "inputs": {
+      "type": ["object", "null"],
+      "properties": {
+        "required": { "type": "array", "items": { "type": "string" } },
+        "optional": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "outputs": {
+      "type": ["array", "null"],
+      "items": {
+        "type": "object",
+        "required": ["item"],
+        "properties": {
+          "item": { "type": "string" },
+          "recipient": { "$ref": "#/$defs/identity" }
+        }
+      }
+    },
+    "escalation_rules": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["trigger", "action"],
+        "properties": {
+          "trigger": { "enum": ["out_of_scope", "never_do_match", "missing_required_input", "irreversible_action", "action_found_wrong"] },
+          "action": {
+            "anyOf": [
+              { "enum": ["hand_off", "ask_requester", "draft_only", "notify_and_continue", "hold_for_approval", "notify_with_record"] },
+              { "type": "null" }
+            ]
+          },
+          "to": {
+            "anyOf": [
+              { "type": "null" },
+              { "type": "string", "minLength": 1 },
+              { "type": "array", "items": { "type": "string", "minLength": 1 }, "minItems": 1 }
+            ]
+          }
+        }
+      }
+    },
+    "constraints": {
+      "type": ["object", "null"],
+      "properties": {
+        "irreversible_actions": { "enum": ["require_approval"] },
+        "max_tool_calls_per_run": { "type": ["integer", "null"], "minimum": 0 },
+        "max_spend_per_run": { "type": ["number", "null"], "minimum": 0 },
+        "rate_limit_per_hour": { "type": ["integer", "null"], "minimum": 0 },
+        "background_runs": { "type": ["boolean", "null"] },
+        "retention_days": { "type": ["integer", "null"], "minimum": 0 }
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "state": { "not": { "const": "draft" } } } },
+      "then": {
+        "required": ["description", "purpose", "activation"],
+        "properties": {
+          "description": { "type": "string", "minLength": 1 },
+          "purpose": { "type": "string", "minLength": 1 },
+          "owner": { "properties": { "identity": { "$ref": "#/$defs/personIdentity" } } },
+          "escalation_recipient": { "properties": { "identity": { "$ref": "#/$defs/identity" } } },
+          "scope": { "properties": { "never_do": { "minItems": 1 } } },
+          "escalation_rules": {
+            "allOf": [
+              { "contains": { "properties": { "trigger": { "const": "out_of_scope" }, "action": { "type": "string" } } } },
+              { "contains": { "properties": { "trigger": { "const": "never_do_match" }, "action": { "type": "string" } } } },
+              { "contains": { "properties": { "trigger": { "const": "missing_required_input" }, "action": { "type": "string" } } } },
+              { "contains": { "properties": { "trigger": { "const": "irreversible_action" }, "action": { "type": "string" } } } }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "required": ["systems"],
+        "properties": { "systems": { "contains": { "properties": { "access": { "enum": ["write", "irreversible"] } } } } }
+      },
+      "then": {
+        "if": { "properties": { "state": { "not": { "const": "draft" } } } },
+        "then": {
+          "required": ["approval_authority"],
+          "properties": {
+            "approval_authority": { "type": "object", "required": ["identity"], "properties": { "identity": { "$ref": "#/$defs/identity" } } },
+            "activation": { "properties": { "type": { "const": "approved" } } }
+          }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "identity": {
+      "type": "string",
+      "pattern": "^(user|role|group|team):[^\\s]+$",
+      "description": "A platform identity: user:<id> for a person; role:, group: or team: for a role or group."
+    },
+    "personIdentity": {
+      "type": "string",
+      "pattern": "^user:[^\\s]+$",
+      "description": "The owner MUST be a person, not a group (SPEC.md, pillar 1)."
+    },
+    "identityOrNull": {
+      "anyOf": [{ "$ref": "#/$defs/identity" }, { "type": "null" }]
+    }
+  }
+}
