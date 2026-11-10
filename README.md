@@ -4,6 +4,8 @@ An open specification for the terms an organization writes down before an AI age
 
 **Read the specification: [SPEC.md](SPEC.md)** (v0.1.2, draft for comment)
 
+**Validate a charter:** [schema/charter-0.1.2.schema.json](schema/charter-0.1.2.schema.json) (JSON Schema 2020-12). A draft may leave MUST fields empty; any other state must fill them. The example in SPEC.md is in [examples/](examples/).
+
 ## In one minute
 
 Every agent gets a charter with eight pillars:

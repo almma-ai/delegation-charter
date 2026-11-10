@@ -1,0 +1,112 @@
+{
+  "spec": "delegation-charter/0.1.2",
+  "id": "chr_estimate_intake",
+  "version": 3,
+  "name": "Estimate intake",
+  "description": "Answers inbound calls and captures details for a moving estimate.",
+  "purpose": "No estimate request goes unanswered when staff are busy.",
+  "success_measure": "Share of calls with a complete estimate request, reviewed monthly.",
+  "review_date": "2026-12-31",
+  "state": "active",
+  "activation": {
+    "type": "approved",
+    "by": "user:franchise-owner",
+    "date": "2026-09-12"
+  },
+  "owner": {
+    "identity": "user:ops-manager"
+  },
+  "escalation_recipient": {
+    "identity": "user:ops-manager",
+    "backup": "role:dispatch"
+  },
+  "approval_authority": {
+    "identity": "user:franchise-owner"
+  },
+  "scope": {
+    "will_do": [
+      "Collect move date, origin, destination and inventory",
+      "Quote from the rate card only"
+    ],
+    "never_do": [
+      {
+        "item": "Quote a price not on the rate card",
+        "enforcement": "instructed"
+      },
+      {
+        "item": "Confirm a booking",
+        "enforcement": "enforced",
+        "tool": "crm_create_lead",
+        "condition": "status = booked"
+      },
+      {
+        "item": "Take payment details",
+        "enforcement": "instructed"
+      }
+    ]
+  },
+  "systems": [
+    {
+      "tool": "rate_card_lookup",
+      "access": "read"
+    },
+    {
+      "tool": "crm_create_lead",
+      "access": "write",
+      "reversal": {
+        "owner": "user:ops-manager",
+        "window_hours": 72
+      }
+    }
+  ],
+  "inputs": {
+    "required": [
+      "caller_phone",
+      "move_date"
+    ],
+    "optional": [
+      "inventory_photos"
+    ]
+  },
+  "outputs": [
+    {
+      "item": "draft_estimate",
+      "recipient": "user:ops-manager"
+    }
+  ],
+  "escalation_rules": [
+    {
+      "trigger": "out_of_scope",
+      "action": "hand_off",
+      "to": "escalation_recipient"
+    },
+    {
+      "trigger": "never_do_match",
+      "action": "hand_off",
+      "to": "escalation_recipient"
+    },
+    {
+      "trigger": "missing_required_input",
+      "action": "ask_requester"
+    },
+    {
+      "trigger": "irreversible_action",
+      "action": "hold_for_approval",
+      "to": "approval_authority"
+    },
+    {
+      "trigger": "action_found_wrong",
+      "action": "notify_with_record",
+      "to": [
+        "escalation_recipient",
+        "reversal_owner"
+      ]
+    }
+  ],
+  "constraints": {
+    "irreversible_actions": "require_approval",
+    "max_tool_calls_per_run": 20,
+    "background_runs": false,
+    "retention_days": 365
+  }
+}
